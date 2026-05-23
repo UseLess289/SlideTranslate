@@ -1,10 +1,16 @@
 # SlideTranslate
 
-Translate and summurize any PDF file
+Translate and summurize any PDF file.
+The program uses Groq API, free and open source.
 
-# Before install
+## Before install
 
-Install the following libraries with pip :
+#### Create an API account on Groq
+
+Create an account for free and create an API key on section API.
+<https://console.groq.com/https://console.groq.com/>
+
+#### Install the following libraries with pip
 
 ```
 groq
