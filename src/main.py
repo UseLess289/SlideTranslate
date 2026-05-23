@@ -4,12 +4,11 @@ import base64
 import os
 from groq import Groq
 from dotenv import load_dotenv
-
 import questionary
 from rich.console import Console
-from rich.progress import track
 
-PATH = "./assets/slides.6.pdf"
+load_dotenv()
+
 OUTPUT_DIR = "./assets/images"
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 
@@ -26,7 +25,7 @@ Respecte EXACTEMENT cette structure :
 ## 2. Concepts clés
 Liste de 5 à 8 concepts centraux, chacun avec une définition courte et précise ainsi qu'un exemple tiré du cours ou le cas échéant inventé mais revérifié'
 Format : **Concept** : définition
-                        ```Exemple```
+```Exemple```
 
 ## 3. Points essentiels à retenir
 5 bullet points synthétisant les idées les plus importantes.
@@ -36,18 +35,20 @@ Ce sont les points qu'un étudiant doit absolument avoir compris.
 Compétences pratiques ou théoriques attendues après ce cours.
 Format : liste de verbes d'action (savoir calculer, savoir distinguer, être capable de...)
 
-
 ---
 Règles :
 - Sois concis et précis, pas de remplissage
 - Ne reformule pas les slides mot pour mot, synthétise vraiment
 - Si une figure apporte une information clé, mentionne-la brièvement
 - Réponds en anglais
-- utilise ** mot **  pour tous les mots de vocabulaire
+- Utilise ** mot ** pour tous les mots de vocabulaire
 """
 
-
-PROMPTS = [HELLO_WORLD, HARD_SYNTHESIS_PROMPT]
+# (prompt, description affichée dans le menu)
+PROMPTS = [
+    (HELLO_WORLD, "Only print Hello World !"),
+    (HARD_SYNTHESIS_PROMPT, "Structured summary with key concepts, ideas and examples"),
+]
 
 
 def extract_text(path: str) -> str:
@@ -79,7 +80,6 @@ def extract_images(path: str) -> list[str]:
     return images_b64
 
 
-# Request LLM for summurize
 def ask_groq(text: str, images_b64: list[str], prompt: str) -> str:
     client = Groq(api_key=GROQ_API_KEY)
 
@@ -106,39 +106,39 @@ def ask_groq(text: str, images_b64: list[str], prompt: str) -> str:
     return response.choices[0].message.content
 
 
-def askVariables():
+def summarize_pdf(prompt: str, path: str):
     console = Console()
 
-    prompt = questionary.select(
-        "Choose a prompt : ", choices=[f"{i + 1}. {p}" for i, p in enumerate(PROMPTS)]
-    ).ask()
-    ind = int(prompt.split(".")[0]) - 1
-    prompt = PROMPTS[ind]
-
-    pdf_path = questionary.text(
-        "Place your PDF file in assets/ folder then write the filename :"
-    ).ask()
-    #    output_path = questionary.text("Define the output folder :", default="./dist").ask()
-    pdf_path = "assets/" + pdf_path
-    track(summarizePDF(prompt, pdf_path))
-
-    console.print("Work done !")
-
-
-def summarizePDF(prompt: str, path: str):
-    load_dotenv()
-
-    print("Extracting du text...")
+    console.print("[cyan]Extraction du texte...[/cyan]")
     text = extract_text(path)
 
-    print("Extracting images...")
+    console.print("[cyan]Extraction des images...[/cyan]")
     images = extract_images(path)
 
-    print("Summurizing...")
+    console.print("[cyan]Envoi à Groq...[/cyan]")
     result = ask_groq(text, images, prompt)
 
-    print(result)
+    console.print("\n[bold green]--- RÉSULTAT ---[/bold green]\n")
+    console.print(result)
+
+
+def ask_variables():
+    # Sélection du prompt : affiche la description, récupère le prompt
+    choice = questionary.select(
+        "Choose a prompt :",
+        choices=[
+            questionary.Choice(title=description, value=prompt)
+            for prompt, description in PROMPTS
+        ],
+    ).ask()
+
+    pdf_file = questionary.text(
+        "Place your PDF in assets/ then enter the filename :"
+    ).ask()
+
+    pdf_path = "assets/" + pdf_file
+    summarize_pdf(choice, pdf_path)
 
 
 if __name__ == "__main__":
-    askVariables()
+    ask_variables()
